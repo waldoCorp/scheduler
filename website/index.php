@@ -69,7 +69,7 @@ $requests = get_requests();
 $rooms = get_rooms('DBH');
 
 // Find the schedule for the current week:
-$prior_week = date('Y-m-d', strtotime('last sunday'));
+$prior_week = date('Y-m-d', strtotime('Sunday this week'));
 $schedule = get_schedule($prior_week);
 
 
