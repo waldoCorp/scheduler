@@ -81,11 +81,12 @@ function create_schedule() {
 
 
 	// Now, we can recurse through all the requests and try to find the best combination:
-	$best_sched = recursive_search_tr($requests, $schedule, $params);
+	$best_sched = recursive_search_2($requests, $schedule, $params);
 
 	//var_dump($best_sched);
 	// Finally, store the schedule in the database:
 	$week = date('Y-m-d', strtotime('Sunday this week'));
+	$week = date('Y-m-d', strtotime('Sunday last week'));
 	foreach ($best_sched->day_shifts as $day_shifts) {
 		foreach ($day_shifts as $shift) {
 			add_shift_to_db($db, $shift, $week);
@@ -113,6 +114,7 @@ class Shift {
 	public $out_of_norm_hours = 0;
 	public $hazard_num = 0;
 	public $padded_end;
+	public $value = 1;
 
 	function __construct($netid, $day, $start, $end, $room, $hazardous) {
 		$this->netid = $netid;
@@ -149,6 +151,7 @@ class Schedule {
 	public $out_of_pref = 0;
 	public $out_of_norm_hours = 0;
 	public $hazard_gaps = 0;
+	public $value = 0;
 
 	/* Takes a Shift object and adds it to the schedule, also increments total
 	   schedule value to include new shift */
@@ -157,12 +160,16 @@ class Schedule {
 		$this->out_of_pref += $shift->out_of_pref;
 		$this->out_of_norm_hours += $shift->out_of_norm_hours;
 		$this->hazard_gaps += $shift->hazard_num;
+		$this->value += $shift->value;
 	}
 
 	function get_out_num() {
 		return $this->out_of_pref + $this->out_of_norm_hours;
 	}
 
+	function get_value() {
+		return $this->value;
+	}
 	function count_shifts() {
 		$i = 0;
 		foreach ($this->day_shifts as $day) {
@@ -220,11 +227,10 @@ function request_to_shift($current_schedule, $request, $start_time, $day, $param
 
 	$end_time = $start_time + $duration;
 	$shift = new Shift($netid, $day, $start_time, $end_time, $room, $haz);
+	$shift->set_padded_end($params->minimum_gap);
 	$allowed = shift_allowed($current_schedule, $shift, $params);
-	//echo "shift allowed to start at $start_time? $allowed \n";
-	if (shift_allowed($current_schedule, $shift, $params)) {
-		$shift->value = determine_value($shift, $request['time_pref'], $params);
-		$shift->set_padded_end($params->minimum_gap);
+	if ($allowed) {
+		determine_value($shift, $request['time_pref'], $params);
 		determine_hazard_status($current_schedule, $shift, $params);
 		return $shift;
 	} else {
@@ -336,7 +342,7 @@ function determine_value(&$shift, $pref, $params) {
 		}
 
 
-	// Now prefer ordinary working hours (09:00 - 18:00):
+/*	// Now prefer ordinary working hours (09:00 - 18:00):
 	if ( $shift_start <= $params->normal_start || $shift_end >= $params->normal_end ) {
 		$temp_val += 1;
 	}
@@ -345,7 +351,7 @@ function determine_value(&$shift, $pref, $params) {
 	if (0 == $day || $day == 6) {
 		$temp_val += 1; // This is more valuable than being during normal hours.
 	}
-
+*/
 	$shift->out_of_norm_hours = $temp_val;
 	//echo "temp_val = " . $temp_val . "\n";
 	return;
@@ -368,6 +374,7 @@ function shift_allowed($current_schedule, $new_shift, $params) {
 	// Make sure the room isn't booked at this time
 	$day_schedule = $current_schedule->day_shifts[$day];
 	$booked_times = find_room_shifts($room, $day_schedule);
+	//var_dump($booked_times);
 
 	if (!empty($booked_times)) {
 		foreach ($booked_times as $booked_time) {
@@ -544,8 +551,12 @@ function determine_overlap_interval($buddy_shifts, &$shift, $params) {
 	return;
 }
 
+
 // Global to store best out-of-preference number:
 $best_out = 99999;
+
+// Value of shifts (really just number of shifts scheduled):
+$best_val = 0;
 
 // And number of hazard shifts:
 $best_hazard = 99999;
@@ -678,12 +689,10 @@ function recursive_search_sub($requests, $schedule, $params) {
 }
 
 function recursive_search_2($requests, $schedule, $params) {
-	if (empty($requests)) {
-		return $schedule;
-	} else {
-		$best_schedule = $schedule;
-		global $best_out, $best_hazard;
+	if (!empty($requests)) {
+		global $best_out, $best_hazard, $best_val;
 
+		$best_schedule = $schedule;
 		// Constant time variables for when shifts can be
 		$start_time = $params->start_time;
 		$end_time = $params->end_time;
@@ -694,26 +703,39 @@ function recursive_search_2($requests, $schedule, $params) {
 			unset($requests_remaining[$key]); // Remove this request from the list
 			$duration = parse_duration($request['duration']);
 
-			//for ($day = 0; $day < 1; $day++) {
-			$day = 0;
-				echo "day is: $day\n";
-				//for ($time = $start_time; $time + $duration <= $end_time; $time += $increment) {
+			for ($day = 0; $day < 7; ++$day) {
+			//$day = 0;
+				//echo "day is: $day\n";
 				for ($time = $start_time; $time + $duration <= $end_time; $time += $increment) {
 					$shift = request_to_shift($schedule, $request, $time, $day, $params);
-					if (!is_null($shift)) {
-						if ($shift->get_out_num() + $schedule->get_out_num() < $best_out) {
-							echo "New best schedule found!\n";
+					if (!is_null($shift)) { // Check if a valid shift
+						$temp_total = $shift->get_out_num() + $schedule->get_out_num();
+						//echo "temp_total = $temp_total\n";
+						if ($temp_total < $best_out) { // This shift combo might improve the schedule
+
 							$this_schedule = clone $schedule;
 							$this_schedule->add_shift_to_schedule($shift);
-							$best_schedule = recursive_search_2($requests_remaining, $this_schedule, $params);
-							$best_out = $best_schedule->get_out_num();
-							echo "Current best: $best_out\n";
+							$this_schedule = recursive_search_2($requests_remaining, $this_schedule, $params);
+							$best_out = $this_schedule->get_out_num();
+							if ($this_schedule->get_value() >= $best_val) {
+								//echo "New best schedule found!\n";
+								$best_schedule = $this_schedule;
+
+								$best_val = $best_schedule->get_value();
+								//echo "Updating best schedule values. best_out = $best_out!\n";
+							}
 						}
 					}
 				}
-			//}
+			}
+			//echo "returning schedule\n";
+			//var_dump($best_schedule);
+			return $best_schedule;
 		}
-		return $best_schedule;
+	} else {
+		//echo "Updating best schedule values. best_out = ".$schedule->get_out_num()."!\n";
+		//$best_out = $schedule->get_out_num();
+		return $schedule;
 	}
 }
 
