@@ -342,7 +342,7 @@ function determine_value(&$shift, $pref, $params) {
 		}
 
 
-/*	// Now prefer ordinary working hours (09:00 - 18:00):
+	// Now prefer ordinary working hours (09:00 - 18:00):
 	if ( $shift_start <= $params->normal_start || $shift_end >= $params->normal_end ) {
 		$temp_val += 1;
 	}
@@ -351,7 +351,7 @@ function determine_value(&$shift, $pref, $params) {
 	if (0 == $day || $day == 6) {
 		$temp_val += 1; // This is more valuable than being during normal hours.
 	}
-*/
+
 	$shift->out_of_norm_hours = $temp_val;
 	//echo "temp_val = " . $temp_val . "\n";
 	return;
