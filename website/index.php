@@ -69,14 +69,20 @@ $requests = get_requests();
 $rooms = get_rooms('DBH');
 
 // Find the schedule for the current week:
-$prior_week = date('Y-m-d', strtotime('Sunday this week'));
+/// WRONG FOR TESTING: should be "Sunday this week"!!!!!!
+$prior_week = date('Y-m-d', strtotime('Sunday last week'));
+
 $schedule = get_schedule($prior_week);
 
 
 // Date for start of next week:
 $next_week = date('Y-m-d', strtotime('next sunday'));
 
-//$schedule = [];
+
+// List of colors to use for calendars:
+$txt_colors = ['#00000','#00000','#00000','#ffffff','#ffffff'];
+$bg_colors = ['#feebe2', '#fbb4b9', '#f768a1', '#c51b8a', '#7a0177'];
+$i = 0; // Counter for which coler we're on...
 
 
 ?>
@@ -224,10 +230,27 @@ $next_week = date('Y-m-d', strtotime('next sunday'));
   </div>
   <div class="row">
     <div class="collapse show" id="scheduleDiv">
-    <br>
-    <h4>Schedule for the week of <?php echo htmlspecialchars($prior_week) ?></h4>
-    <div id="calendar" style="height: 700px; width: 900px"></div>
-
+      <br>
+      <h4>Schedule for the week of <?php echo htmlspecialchars($prior_week) ?></h4>
+      <div clas="row">
+        <div class="col">
+          <ul style="list-style-type:none; display:inline-flex;">
+            <?php $i=0; foreach($rooms as $room) { ?>
+            <li>
+              <svg height="30" width="25">
+                <circle cx="12.5" cy="14" r="7" stroke="black"
+                fill="<?php echo htmlspecialchars($bg_colors[$i])?>">
+              </svg>
+              <?php echo htmlspecialchars($room['room_id']); ?>
+              &nbsp;
+            </li>
+          <?php ++$i; } ?>
+          </ul>
+        </div>
+        <div class="col">
+          <div id="calendar" style="height: 700px; width: 900px"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -270,12 +293,6 @@ $(document).ready( function() {
   $('#requestsTable').DataTable();
 })
 
-<?php // List of colors to use for calendars:
-  $txt_colors = ['#00000','#00000','#00000','#ffffff','#ffffff'];
-  $bg_colors = ['#feebe2', '#fbb4b9', '#f768a1', '#c51b8a', '#7a0177', '#00a9ff'];
-  $i = 0;
-?>
-
 
 function getPadStart(value) {
   value = value.toString();
@@ -312,14 +329,11 @@ const template = {
 
 // Calendar instantiation and scheduling
 var Calendar = tui.Calendar;
+
 var calendar = new Calendar('#calendar', {
   defaultView: 'week',
   taskView: false,
   useDetailPopup: true,
-  week: {
-    hourStart: "7",
-    hourEnd: "23"
-  },
   timezones: [
             {
                 timezoneOffset: parseInt(-300),
@@ -327,7 +341,7 @@ var calendar = new Calendar('#calendar', {
             }],
   //template: template,
   calendars: [
-    <?php foreach($rooms as $room) { ?>
+    <?php $i = 0; foreach($rooms as $room) { ?>
       {
         id: "<?php echo htmlspecialchars($room['room_id']); ?>",
         name: "<?php echo htmlspecialchars($room['room_id']); ?>",
