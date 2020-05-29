@@ -24,9 +24,6 @@
 <script src="https://uicdn.toast.com/tui-calendar/latest/tui-calendar.js"></script>
 <!-- End Toast UI -->
 
-<!-- Moment.JS for time/date math... -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.26.0/moment.min.js"></script>
-
 <!-- DataTables for formatting users / requests -->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.css">
 
@@ -46,18 +43,25 @@
 
 </style>
 
-<title>Halas Lab Scheduler</title>
+<title>Lab Scheduler</title>
 
 </head>
 
 <?php
+session_start();
 // Region to set up PHP stuff
 
 require_once $function_path . 'get_names.php';
 require_once $function_path . 'get_requests.php';
 require_once $function_path . 'get_schedule.php';
 require_once $function_path . 'get_rooms.php';
+require_once $function_path . 'record_user_usage.php';
 
+// Generate our temporary tables:
+$uuid = $_SESSION['uuid'];
+
+// And track when this data was last used:
+record_user_usage($uuid);
 
 // List of all users that are currently registered
 $names = get_names();
@@ -108,7 +112,7 @@ $i = 0; // Counter for which coler we're on...
       <form id="userForm" action="endpoints/user_endpoint.php" method="post">
         <div class="input-group">
           <div class="input-group-prepend">
-            <span class="input-group-text">NetId</span>
+            <span class="input-group-text">ID</span>
           </div>
           <input type="text" class="form-control" id="netidAdd" name="netid">
           <div class="input-group-prepend">
@@ -132,7 +136,7 @@ $i = 0; // Counter for which coler we're on...
       <table id="usersTable" class="table">
         <thead>
           <tr>
-            <th scope="col">NetID</th>
+            <th scope="col">ID</th>
             <th scope="col">Name</th>
             <th scope="col">Time Preference</th>
           </tr>
@@ -162,7 +166,7 @@ $i = 0; // Counter for which coler we're on...
       <form id="requestForm" action="endpoints/request_endpoint.php" method="post">
         <div class="input-group">
           <div class="input-group-prepend">
-            <span class="input-group-text">NetId</span>
+            <span class="input-group-text">ID</span>
           </div>
           <select class="form-control" id="netidRequest" name="netid">
             <?php foreach($names as $name) { ?>
@@ -199,7 +203,7 @@ $i = 0; // Counter for which coler we're on...
       <table id="requestsTable" class="table">
         <thead>
           <tr>
-            <th scope="col">NetID</th>
+            <th scope="col">ID</th>
             <th scope="col">Room Requested</th>
             <th scope="col">Duration Requested</th>
             <th scope="col">Hazardous Materials?</th>
@@ -294,39 +298,6 @@ $(document).ready( function() {
 })
 
 
-function getPadStart(value) {
-  value = value.toString();
-
-  return value.padStart(2, '0');
-}
-
-const template = {
-  timegridDisplayPrimaryTime: function(time) {
-            var meridiem = 'am';
-            var hour = time.hour;
-
-            if (time.hour > 12) {
-                meridiem = 'pm';
-                hour = time.hour - 12;
-            }
-            return time.hour;
-            //return hour + ' ' + meridiem;
-        },
-        timegridDisplayTime: function(time) {
-            return getPadStart(time.hour) + ':' + getPadStart(time.hour);
-        },
-        timegridCurrentTime: function(timezone) {
-          var templates = [];
-
-          if (timezone.dateDifference) {
-              templates.push('[' + timezone.dateDifferenceSign + timezone.dateDifference + ']<br>');
-          }
-
-          templates.push(moment(timezone.hourmarker.toUTCString()).format('HH:mm'));
-          return templates.join('');
-        },
-}
-
 // Calendar instantiation and scheduling
 var Calendar = tui.Calendar;
 
@@ -339,7 +310,7 @@ var calendar = new Calendar('#calendar', {
                 timezoneOffset: parseInt(-300),
                 tooltip: 'US/Central'
             }],
-  //template: template,
+
   calendars: [
     <?php $i = 0; foreach($rooms as $room) { ?>
       {
