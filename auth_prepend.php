@@ -5,17 +5,16 @@
  * the target of a fixation attack.
 **/
 
-//session_start();
+session_start();
 
-// First, we check to make sure we have a test server login token set:
-/*
-if (!$_SESSION['login']) {
-	header('Location: /index.php');
-}
-*/
+// Set up paths for scripts:
+$function_path = __DIR__ . "/functions.php/";
+require_once $function_path . 'generate_uuidv4.php';
+
 
 // Then, we check for a session canary, and generate it if it doesn't exist yet
-/*if (!isset($_SESSION['canary'])) {
+// also create a UUID as
+if (!isset($_SESSION['canary'])) {
 	session_regenerate_id(true);
 	$_SESSION['canary'] = time();
 }
@@ -25,8 +24,10 @@ if ($_SESSION['canary'] < time() - 1800) {
 	session_regenerate_id(true);
 	$_SESSION['canary'] = time();
 }
-*/
-// Set up paths for scripts:
-$function_path = __DIR__ . "/functions.php/";
+
+// On session creation generate a UUID and create temp tables:
+if (!isset($_SESSION['uuid'])) {
+  $_SESSION['uuid'] = generate_uuid();
+}
 
 // Could get $uuid here...
