@@ -32,11 +32,14 @@ function get_schedule($week) {
 	try {
 		$sql = "SELECT s.netid, s.room_id, s.start_time, s.end_time, s.week_start,
 	  u.name FROM $schedule_table AS s
+
+
 		LEFT JOIN $users_table AS u ON s.netid = u.netid
-		WHERE week_start = :week";
-		
+		WHERE week_start = :week AND (s.test_user = 'public' OR s.test_user = :test_user)";
+
 		$stmt = $db->prepare($sql);
 		$stmt->bindValue(':week',$week);
+		$stmt->bindValue(':test_user', $test_user);
 
 		$success = $stmt->execute();
 	} catch(PDOException $e) {

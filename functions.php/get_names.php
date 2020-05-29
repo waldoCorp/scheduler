@@ -29,8 +29,10 @@ function get_names() {
 
 
 	try {
-		$sql = "SELECT * from $users_table";
+		$sql = "SELECT * from $users_table WHERE test_user = 'public' OR
+						test_user = :test_user";
 		$stmt = $db->prepare($sql);
+		$stmt->bindValue(':test_user', $test_user);
 
 		$success = $stmt->execute();
 	} catch(PDOException $e) {

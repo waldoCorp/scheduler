@@ -34,13 +34,14 @@ function add_new_request($netid,$room,$duration,$hazardous) {
   $netid = strtolower($netid);
 
 	try {
-		$sql = "INSERT INTO $requests_table (netid, room_id, duration, hazardous)
-						VALUES (:netid, :room, :duration, :hazardous)";
+		$sql = "INSERT INTO $requests_table (netid, room_id, duration, hazardous, test_user)
+						VALUES (:netid, :room, :duration, :hazardous, :test_user)";
 		$stmt = $db->prepare($sql);
 		$stmt->bindValue(':netid', $netid);
 		$stmt->bindValue(':room', $room);
 		$stmt->bindValue(':duration', $duration);
 		$stmt->bindValue(':hazardous', $hazardous);
+		$stmt->bindValue(':test_user', $test_user);
 
 		$success = $stmt->execute();
 	} catch(PDOException $e) {

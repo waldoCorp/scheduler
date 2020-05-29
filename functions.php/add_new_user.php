@@ -35,14 +35,15 @@ function add_new_user($netid,$name,$pref) {
 
 
 	try {
-		$sql = "INSERT INTO $users_table (netid, name, time_pref)
-						VALUES (:netid, :name, :pref)
+		$sql = "INSERT INTO $users_table (netid, name, time_pref, test_user)
+						VALUES (:netid, :name, :pref, :test_user)
 						ON CONFLICT (netid) DO UPDATE SET
 						name=EXCLUDED.name, time_pref=EXCLUDED.time_pref;";
 		$stmt = $db->prepare($sql);
 		$stmt->bindValue(':netid', $netid);
 		$stmt->bindValue(':name', $name);
 		$stmt->bindValue(':pref', $pref);
+		$stmt->bindValue(':test_user', $test_user);
 
 		$success = $stmt->execute();
 	} catch(PDOException $e) {

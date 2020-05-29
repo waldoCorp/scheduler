@@ -35,9 +35,11 @@ function create_schedule() {
 	try {
 		$sql = "SELECT r.netid, r.room_id, r.duration, r.hazardous, u.time_pref
 		 FROM $requests_table AS r
-		 LEFT JOIN $users_table AS u ON r.netid = u.netid;";
-		$stmt = $db->prepare($sql);
+		 LEFT JOIN $users_table AS u ON r.netid = u.netid
+		 WHERE (test_user = 'public' OR test_user = :test_user);";
 
+		$stmt = $db->prepare($sql);
+		$stmt->bindValue(':test_user', $test_user);
 		$success = $stmt->execute();
 	} catch(PDOException $e) {
 		die('ERROR: ' . $e->getMessage() . "\n");
@@ -126,6 +128,8 @@ class Shift {
 		if ($this->hazardous) {
 			$this->hazard_num = 1;
 		}
+		// Set value based on duration:
+		$this->value = ($end - $start)/3600; // Hours
 	}
 
 	function get_out_num() {

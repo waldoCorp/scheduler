@@ -30,8 +30,11 @@ function get_requests() {
 
 
 	try {
-		$sql = "SELECT * from $requests_table";
+		$sql = "SELECT * from $requests_table WHERE test_user = 'public' OR
+						test_user = :test_user";
+
 		$stmt = $db->prepare($sql);
+		$stmt->bindValue(':test_user', $test_user);
 
 		$success = $stmt->execute();
 	} catch(PDOException $e) {

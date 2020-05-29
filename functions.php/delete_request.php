@@ -42,13 +42,15 @@ function delete_request($netid,$room,$duration,$hazardous) {
 		$sql = "DELETE FROM $requests_table WHERE request_id
 						IN (SELECT min(request_id) FROM $requests_table WHERE
 						netid = :netid AND room_id = :room AND duration = :duration
-						AND hazardous = :hazardous)";
+						AND hazardous = :hazardous AND
+						(test_user = 'public' OR test_user = :test_user))";
 
 		$stmt = $db->prepare($sql);
 		$stmt->bindValue(':netid', $netid);
 		$stmt->bindValue(':room', $room);
 		$stmt->bindValue(':duration', $duration);
 		$stmt->bindValue(':hazardous', $hazardous);
+		$stmt->bindValue(':test_user', $test_user);
 
 		$success = $stmt->execute();
 	} catch(PDOException $e) {
