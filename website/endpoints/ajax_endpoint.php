@@ -33,7 +33,9 @@ function delete_req() {
 	$room = $return['room'];
 	$duration = $return['duration'];
 	$hazardous = $return['hazardous'];
-
+	if($_SESSION['num_requests'] > 0){
+		--$_SESSION['num_requests'];
+	}
 	delete_request($netid, $room, $duration, $hazardous);
 	echo json_encode("Request Deleted");
 }
