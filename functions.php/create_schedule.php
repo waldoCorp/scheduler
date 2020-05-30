@@ -26,17 +26,25 @@ function create_schedule() {
 	// Include database connection
 	require_once __DIR__ . '/db_connect.php';
 
-	// First, we need to pull the requests along with each user's preferences:
+
 
 	// Connect to db
 	$db = db_connect();
 
+	// Clear out previous schedules for this user (if using as demo):
+	if ($test_user != 'public'){
+		$sql = "DELETE FROM $schedule_table WHERE test_user = :test_user;";
+		$stmt = $db->prepare($sql);
+		$stmt->bindValue(':test_user', $test_user);
+		$success = $stmt->execute();
+	}
 
+	// We need to pull the requests along with each user's preferences:
 	try {
 		$sql = "SELECT r.netid, r.room_id, r.duration, r.hazardous, u.time_pref
 		 FROM $requests_table AS r
 		 LEFT JOIN $users_table AS u ON r.netid = u.netid
-		 WHERE (test_user = 'public' OR test_user = :test_user);";
+		 WHERE (r.test_user = 'public' OR r.test_user = :test_user);";
 
 		$stmt = $db->prepare($sql);
 		$stmt->bindValue(':test_user', $test_user);
@@ -348,12 +356,12 @@ function determine_value(&$shift, $pref, $params) {
 
 	// Now prefer ordinary working hours (09:00 - 18:00):
 	if ( $shift_start <= $params->normal_start || $shift_end >= $params->normal_end ) {
-		$temp_val += 1;
+		$temp_val += 3;
 	}
 
 	// And prefer during the work week (Mon-Fri):
 	if (0 == $day || $day == 6) {
-		$temp_val += 1; // This is more valuable than being during normal hours.
+		$temp_val += 3; // This is more valuable than being during normal hours.
 	}
 
 	$shift->out_of_norm_hours = $temp_val;
@@ -801,14 +809,17 @@ function add_shift_to_db($db, $shift, $week) {
 	$start_ts = $date . " " . $start_time; // Starting timestamp
 	$end_ts = $date . " " . $end_time; // Ending timestamp
 
-	$sql = "INSERT INTO $schedule_table (netid, room_id, start_time, end_time,
-					week_start) VALUES (:netid, :room, :start_time, :end_time, :week)";
+	$sql = "INSERT INTO $schedule_table
+					(netid, room_id, start_time, end_time, week_start, test_user)
+					VALUES
+					(:netid, :room, :start_time, :end_time, :week, :test_user)";
 	$stmt = $db->prepare($sql);
 	$stmt->bindValue(':netid', $shift->netid);
 	$stmt->bindValue(':room', $shift->room);
 	$stmt->bindValue(':start_time', $start_ts);
 	$stmt->bindValue(':end_time', $end_ts);
 	$stmt->bindValue(':week', $week);
+	$stmt->bindValue(':test_user', $test_user);
 	$success = $stmt->execute();
 	return $success;
 }

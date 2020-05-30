@@ -33,12 +33,13 @@ function add_new_user($netid,$name,$pref) {
 	// make netid lower case
   $netid = strtolower($netid);
 
-
 	try {
+		// This command won't allow you to update public users
 		$sql = "INSERT INTO $users_table (netid, name, time_pref, test_user)
 						VALUES (:netid, :name, :pref, :test_user)
 						ON CONFLICT (netid) DO UPDATE SET
-						name=EXCLUDED.name, time_pref=EXCLUDED.time_pref;";
+						name=EXCLUDED.name, time_pref=EXCLUDED.time_pref
+						WHERE NOT $users_table.test_user = 'public';";
 		$stmt = $db->prepare($sql);
 		$stmt->bindValue(':netid', $netid);
 		$stmt->bindValue(':name', $name);

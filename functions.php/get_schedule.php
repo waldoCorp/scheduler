@@ -29,13 +29,14 @@ function get_schedule($week) {
 	// Connect to db
 	$db = db_connect();
 
+
+	// First, try to get schedule that this user made:
 	try {
 		$sql = "SELECT s.netid, s.room_id, s.start_time, s.end_time, s.week_start,
 	  u.name FROM $schedule_table AS s
 
-
 		LEFT JOIN $users_table AS u ON s.netid = u.netid
-		WHERE week_start = :week AND (s.test_user = 'public' OR s.test_user = :test_user)";
+		WHERE week_start = :week AND s.test_user = :test_user";
 
 		$stmt = $db->prepare($sql);
 		$stmt->bindValue(':week',$week);
@@ -47,5 +48,26 @@ function get_schedule($week) {
 	}
 
 	$result = $stmt->fetchAll();
+
+	// If they haven't made one yet, return the public schedule:
+	if (empty($result)) {
+		try {
+			$sql = "SELECT s.netid, s.room_id, s.start_time, s.end_time, s.week_start,
+		  u.name FROM $schedule_table AS s
+
+			LEFT JOIN $users_table AS u ON s.netid = u.netid
+			WHERE s.test_user = :test_user";
+
+			$stmt = $db->prepare($sql);
+			$stmt->bindValue(':test_user', 'public');
+
+			$success = $stmt->execute();
+		} catch(PDOException $e) {
+			die('ERROR: ' . $e->getMessage() . "\n");
+		}
+
+		$result = $stmt->fetchAll();
+	}
+
 	return $result;
 }

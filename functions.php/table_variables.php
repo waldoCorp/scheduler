@@ -18,5 +18,5 @@ $temp_table = 'temp_tables';
 if (isset($_SESSION['uuid'])) {
   $test_user = $_SESSION['uuid'];
 } else {
-  $test_user = ''; 
+  $test_user = 'public'; 
 }
