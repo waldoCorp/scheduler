@@ -16,6 +16,11 @@ if( is_null($return['hazardous']) ) {
   $hazardous = 1;
 }
 
-add_new_request($netid, $room, $duration, $hazardous);
+$num_requests = $_SESSION['num_requests'];
+
+if ($num_requests <= 10) {
+  ++$_SESSION['num_requests'];
+  add_new_request($netid, $room, $duration, $hazardous);
+}
 
 header('Location: ../index.php');
