@@ -57,10 +57,10 @@ require_once $function_path . 'get_schedule.php';
 require_once $function_path . 'get_rooms.php';
 require_once $function_path . 'record_user_usage.php';
 
-// Generate our temporary tables:
+
 $uuid = $_SESSION['uuid'];
 
-// And track when this data was last used:
+// Track when this data was last used:
 record_user_usage($uuid);
 
 // List of all users that are currently registered
@@ -68,6 +68,14 @@ $names = get_names();
 
 // Get all requests for the next week:
 $requests = get_requests();
+
+// Limit number of requests on the demo site:
+if (!isset($_SESSION['num_requests'])) {
+  $_SESSION['num_requests'] = 0;
+  $num_requests = 0;
+} else {
+  $num_requests = $_SESSION['num_requests'];
+}
 
 // List of available rooms:
 $rooms = get_rooms('DBH');
@@ -163,6 +171,8 @@ $i = 0; // Counter for which coler we're on...
   <div class="row">
     <div class="collapse" id="requestsDiv">
       <br>
+      <p><small class="text-muted">Limited to 10 on demo site</small></p>
+
       <form id="requestForm" action="endpoints/request_endpoint.php" method="post">
         <div class="input-group">
           <div class="input-group-prepend">
@@ -235,6 +245,10 @@ $i = 0; // Counter for which coler we're on...
   <div class="row">
     <div class="collapse show" id="scheduleDiv">
       <br>
+      <form id="scheduleForm" action="endpoints/schedule_endpoint.php" method="post">
+        <button type="submit" class="btn btn-secondary" id="scheduleSubmit">Remake Schedule</button>
+      </form>
+      <br>
       <h4>Schedule for the week of <?php echo htmlspecialchars($prior_week) ?></h4>
       <div clas="row">
         <div class="col">
@@ -277,6 +291,9 @@ $('.deleteRequest').click(function() {
 
 });
 
+// Global to track if we remove requests:
+var num_requests = <?php echo json_encode($num_requests); ?>;
+
 function deleteRequest(netid,room,duration,hazardous) {
   // AJAX Request here
   var data = {"action":'deleteRequest', "netid":netid, "room":room,
@@ -288,14 +305,27 @@ function deleteRequest(netid,room,duration,hazardous) {
     dataType: "json",
     url: "./endpoints/ajax_endpoint.php",
     data: data,
+  }).done(function() {
+    --num_requests;
+    if (num_requests < 10) {
+      $('#requestSubmit').prop('disabled',false);
+    }
   });
 }
+
+
 
 // Turn our tables into DataTables
 $(document).ready( function() {
   $('#usersTable').DataTable();
   $('#requestsTable').DataTable();
+
+  if (num_requests >= 10) {
+    $('#requestSubmit').prop('disabled',true);
+  }
 })
+
+// Disable adding requests if there are already 10:
 
 
 // Calendar instantiation and scheduling
@@ -310,6 +340,7 @@ var calendar = new Calendar('#calendar', {
                 timezoneOffset: parseInt(-300),
                 tooltip: 'US/Central'
             }],
+  isReadOnly: true,
 
   calendars: [
     <?php $i = 0; foreach($rooms as $room) { ?>
