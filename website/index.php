@@ -349,6 +349,7 @@ var Calendar = tui.Calendar;
 var calendar = new Calendar('#calendar', {
   defaultView: 'week',
   taskView: false,
+  scheduleView: ['time'],
   useDetailPopup: true,
   timezones: [
             {
