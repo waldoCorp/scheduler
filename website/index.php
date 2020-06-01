@@ -275,6 +275,21 @@ $i = 0; // Counter for which coler we're on...
 
 <!-- Container -->
 </div>
+<br>
+<br>
+<footer class="footer">
+  <div class="container-fluid">
+    <span class="text-muted">
+      This site stores a cookie in your browser for necessary functions. It is not
+      and will never be used to track you on any site except this one.
+      <br>
+      Find a bug? Want a new feature? <a href="mailto:contact@waldocorp.com">Drop us a line!</a>
+      | <a href="https://waldocorp.com">Other Projects</a>
+      | <a href="https://github.com/waldoCorp/scheduler">Github Page</a>
+    </span>
+  </div>
+</footer>
+
 </main>
 
 <script type="text/javascript">
