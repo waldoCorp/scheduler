@@ -81,10 +81,16 @@ if (!isset($_SESSION['num_requests'])) {
 $rooms = get_rooms('DBH');
 
 // Find the schedule for the current week:
-/// WRONG FOR TESTING: should be "Sunday this week"!!!!!!
+
 $prior_week = date('Y-m-d', strtotime('Sunday last week'));
 
 $schedule = get_schedule($prior_week);
+
+// Force schedule creation if schedule is empty and we haven't done this before:
+if (empty($schedule) && !isset($_SESSION['autoreload'])) {
+  $_SESSION['autoreload'] = true;
+  header('Location: endpoints/schedule_endpoint.php');
+}
 
 
 // Date for start of next week:
